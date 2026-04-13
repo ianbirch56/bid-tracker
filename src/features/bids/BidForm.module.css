@@ -1,0 +1,104 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.formHeader {
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.formHeader h2 { font-size: 1.5rem; margin-bottom: 4px; color: var(--text-main); }
+.formHeader p { font-size: 0.9rem; color: var(--text-muted); }
+
+.scrollableBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.section h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.field input, .field select, .field textarea {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.fullSpan {
+  grid-column: 1 / -1;
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.checkboxField input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.checkboxRow {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.formFooter {
+  padding: 24px 30px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.btnSecondary {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-main);
+  padding: 10px 20px;
+}
+
+.btnSecondary:hover {
+  background: rgba(255,255,255,0.1);
+}

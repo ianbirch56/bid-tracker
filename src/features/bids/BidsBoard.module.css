@@ -1,0 +1,159 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.header h1 {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.header p {
+  color: var(--text-muted);
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchWrapper {
+  flex: 1;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.searchWrapper input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-main);
+}
+
+.filterWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-muted);
+}
+
+.filterWrapper select {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 12px 0;
+}
+
+.tableWrapper {
+  padding: 0;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--secondary);
+}
+
+.table td {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.primaryText { font-weight: 600; color: var(--text-main); }
+.secondaryText { font-size: 0.8rem; color: var(--text-muted); }
+.amountText { font-family: monospace; font-size: 0.9rem; color: var(--accent); }
+
+.typeBadge {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.statusSuccessful { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.statusUnsuccessful { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.statusSubmitted { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.statusDraft { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+
+.actionRow { display: flex; gap: 8px; }
+
+.iconBtn {
+  background: none;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  padding: 6px;
+}
+
+.iconBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.noData {
+  text-align: center;
+  padding: 60px !important;
+  color: var(--text-muted);
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  width: 100%;
+  max-width: 900px;
+  height: 90vh;
+  overflow: hidden;
+  position: relative;
+}
