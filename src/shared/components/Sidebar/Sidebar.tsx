@@ -70,6 +70,9 @@ export const Sidebar = () => {
           <LogOut size={16} />
           Sign Out
         </button>
+        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', marginTop: '8px', textAlign: 'center' }}>
+          System Version: 2.0.4-SECURE
+        </div>
       </div>
     </aside>
   );
