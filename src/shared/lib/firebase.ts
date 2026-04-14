@@ -15,7 +15,7 @@ const firebaseConfig = {
 import { initializeFirestore } from 'firebase/firestore';
 
 // Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().find(a => a.name === 'funding-tracker') || initializeApp(firebaseConfig, 'funding-tracker');
 const auth = getAuth(app);
 
 // Use Long Polling to bypass corporate firewalls/proxies

@@ -18,7 +18,7 @@ export const Sidebar = () => {
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Funding Bids', path: '/bids', icon: FileText },
     { name: 'Contacts', path: '/contacts', icon: Users },
-    ...(userRole === 'Admin' ? [{ name: 'Team Access', path: '/team', icon: Shield }] : [])
+    ...(userRole === 'Admin' ? [{ name: 'Admin Management', path: '/admin', icon: Shield }] : [])
   ];
 
   // Logic to parse name for the profile card

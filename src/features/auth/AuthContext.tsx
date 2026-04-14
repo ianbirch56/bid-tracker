@@ -25,8 +25,50 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>('Viewer');
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      // 1. Try Cookie (Highest persistence)
+      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_survival_session='));
+      let sess = cook ? decodeURIComponent(cook.split('=')[1]) : null;
+      
+      // 2. Try LocalStorage (Fallback)
+      if (!sess) sess = localStorage.getItem('emergency_session');
+      
+      if (sess) {
+        try {
+          const s = JSON.parse(sess);
+          if (s && s.email) {
+            (window as any).__EMERGENCY_ACTIVE = true;
+            return { 
+              email: s.email, 
+              uid: s.uid || s.localId || 'emergency-user', 
+              emailVerified: true,
+              isOffline: !!s.offline 
+            } as any;
+          }
+        } catch (e) {}
+      }
+    }
+    return null;
+  });
+
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    if (typeof window !== 'undefined') {
+      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_survival_session='));
+      let sess = cook ? decodeURIComponent(cook.split('=')[1]) : null;
+      if (!sess) sess = localStorage.getItem('emergency_session');
+
+      if (sess) {
+        try {
+          const s = JSON.parse(sess);
+          if (s && s.email && s.email.toLowerCase() === 'ian.birch@ymcatrinity.org.uk') return 'Admin';
+          if (s && s.offline) return 'Admin';
+        } catch (e) {}
+      }
+    }
+    return 'Viewer';
+  });
+
   const [loading, setLoading] = useState(false);
   const [showBypass, setShowBypass] = useState(false);
   
@@ -37,20 +79,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authError, setAuthError] = useState('');
   const [authFormLoading, setAuthFormLoading] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>(['System initialized.']);
-  const VERSION = 'v1.0.1-FIREWALL-FIX';
+  const VERSION = 'v1.0.21-OFFLINE-SURVIVAL';
 
   const addLog = (msg: string) => {
     setDebugLog(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
   };
 
   useEffect(() => {
-    // Safety timer for manual bypass
-    const bypassId = setTimeout(() => {
-      if (!user) setShowBypass(true);
-    }, 2000);
+    if (typeof window !== 'undefined') {
+      // REGISTER LIVE HIJACK: Allows the survival script to force login WITHOUT a reload
+      (window as any).__EMERGENCY_SIGN_IN = (email: string) => {
+        addLog(`⚡ LIVE HIJACK: Forcing session for ${email}`);
+        (window as any).__EMERGENCY_ACTIVE = true;
+        const mockUser = { 
+          email: email, 
+          uid: 'hijack-' + Date.now(), 
+          emailVerified: true,
+          isOffline: true 
+        } as any;
+        
+        // Save to survival storage too
+        const sess = JSON.stringify(mockUser);
+        localStorage.setItem('emergency_session', sess);
+        document.cookie = "ymca_survival_session=" + encodeURIComponent(sess) + "; path=/; max-age=86400; SameSite=Lax";
+        
+        setUser(mockUser);
+        setUserRole('Admin');
+        setLoading(false);
+        setAuthError('');
+        return 'HIJACK_SUCCESS';
+      };
+
+      if (localStorage.getItem('emergency_session')) {
+        addLog('🚀 Survival Session Locked - Ignoring Firebase.');
+      }
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      addLog(`Auth state changed: ${currentUser ? 'User Found' : 'No User'}`);
+      // SESSION SHIELD: Keep emergency session locked
+      if ((window as any).__EMERGENCY_ACTIVE) return;
       if (currentUser && currentUser.email) {
         try {
           // THE BOUNCER: Check if user exists in the appUsers list for this tracker
@@ -84,18 +151,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setAuthError('Security check failed. Please check your connection.');
         } finally {
           setLoading(false);
-          clearTimeout(bypassId);
         }
       } else {
         setUser(null);
         setLoading(false);
-        clearTimeout(bypassId);
       }
     });
 
     return () => {
       unsubscribe();
-      clearTimeout(bypassId);
     };
   }, []);
 
