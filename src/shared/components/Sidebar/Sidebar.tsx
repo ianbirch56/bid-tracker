@@ -71,7 +71,7 @@ export const Sidebar = () => {
           Sign Out
         </button>
         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', marginTop: '8px', textAlign: 'center' }}>
-          System Version: 2.0.4-SECURE
+          System Version: 2.0.5-ULTRA
         </div>
       </div>
     </aside>

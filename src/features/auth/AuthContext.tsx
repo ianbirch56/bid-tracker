@@ -165,8 +165,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (typeof window !== 'undefined') window.alert(`[ALERT] Attempting ${isLogin ? 'Login' : 'Registration'}`);
-    addLog(`Attempting ${isLogin ? 'Login' : 'Registration'}...`);
+    if (typeof window !== 'undefined') {
+      addLog(`Attempting ${isLogin ? 'Login' : 'Registration'}...`);
+    }
     setAuthError('');
     setAuthFormLoading(true);
     try {
@@ -240,7 +241,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           <button 
             className={styles.toggleBtn} 
             onClick={() => {
-              if (typeof window !== 'undefined') window.alert(`[ALERT] Switching to ${!isLogin ? 'Login' : 'Register'}`);
               setIsLogin(!isLogin); 
               setAuthError('');
               addLog(`Switched to ${!isLogin ? 'Login' : 'Register'}`);
