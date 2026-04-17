@@ -37,7 +37,9 @@ export const Sidebar = () => {
     <aside className={`glass-panel ${styles.sidebar}`}>
       <div className={styles.brand}>
         <img src={Logo.src} alt="YMCA Logo" className={styles.companyLogo} />
-        Funding Tracker
+        <div className={styles.brandName}>
+          Funding Tracker
+        </div>
       </div>
 
       <nav className={styles.nav}>
@@ -71,7 +73,7 @@ export const Sidebar = () => {
           Sign Out
         </button>
         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', marginTop: '8px', textAlign: 'center' }}>
-          System Version: 2.0.5-ULTRA
+          System Version: 2.0.5-ULTRA-SYNC
         </div>
       </div>
     </aside>

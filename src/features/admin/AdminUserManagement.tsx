@@ -15,7 +15,7 @@ export interface AppUser {
   role: 'Admin' | 'Editor' | 'Viewer';
   status: 'Active' | 'Revoked';
   name: string;
-  adminKey?: string; // Only used for verification, not stored permanently
+  adminKey?: string; 
 }
 
 export const AdminUserManagement = () => {
@@ -36,12 +36,11 @@ export const AdminUserManagement = () => {
   });
 
   useEffect(() => {
-    // DIAGNOSTIC CORE: Verify active app instance
+    // DIAGNOSTIC CORE
     try {
       const app = getApp('funding-tracker');
       const pId = (app.options as any).projectId;
       setActiveProject(pId);
-      console.log('🚀 ACTIVE CONNECTION:', pId);
     } catch (e) {
       console.error('❌ Connection Detect Failed:', e);
     }
@@ -68,7 +67,7 @@ export const AdminUserManagement = () => {
     return (
       <div className={styles.board}>
         <h1>Unauthorized</h1>
-        <p>You do not have permission to manage system access for the Bid Tracker.</p>
+        <p>You do not have permission to manage system access.</p>
       </div>
     );
   }
@@ -86,17 +85,15 @@ export const AdminUserManagement = () => {
       if (!key) return;
 
       try {
-        // We use setDoc (update) with the adminKey to satisfy the security rules
-        // which likely block direct deleteDoc calls.
         await setDoc(doc(db, 'appUsers', user.id), {
           ...user,
           status: 'Revoked',
           adminKey: key
         });
-        addToast("Access Revoked", "success", "User access has been neutralized and removed from view.");
-      } catch (error) {
+        addToast("Access Revoked", "success", "User has been removed from the active list.");
+      } catch (error: any) {
         console.error("Revoke Error:", error);
-        addToast("Action Failed", "error", "Check your Security Key or permissions.");
+        addToast("Action Failed", "error", `Details: ${error.message || error.code || 'Unknown Error'}`);
       }
     }
   };
@@ -113,18 +110,18 @@ export const AdminUserManagement = () => {
         email: docId,
         role: formData.role as any,
         status: 'Active',
-        adminKey: formData.adminKey // Sent to Firestore for Rule validation
+        adminKey: formData.adminKey
       };
 
       await setDoc(doc(db, 'appUsers', docId), newUser);
 
       setIsModalOpen(false);
-      addToast("User Pre-Authorized", "success", `${newUser.name} can now sign in.`);
+      addToast("User Pre-Authorized", "success", `${newUser.name} is now approved.`);
       
       setFormData({ name: '', email: '', role: 'Editor', status: 'Active', adminKey: '' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Save Error:", error);
-      addToast("Save Failed", "error", "Check your Secret Key or permissions.");
+      addToast("Save Failed", "error", `Details: ${error.message || error.code || 'Unknown Error'}`);
     }
   };
 
@@ -132,25 +129,34 @@ export const AdminUserManagement = () => {
     <div className={styles.board}>
       <div className={styles.header}>
         <div>
-          <h1>Bid Tracker Admin</h1>
+          <h1>Registration Admin</h1>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              Pre-authorize users specifically for the Funding Bid Tracker.
+              Control access using the hardened Bypass Key.
             </p>
-            <div style={{ 
-              background: activeProject === 'funding-tracker-94d6f' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              color: activeProject === 'funding-tracker-94d6f' ? '#10b981' : '#ef4444',
-              padding: '2px 8px', borderRadius: '4px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px',
-              border: activeProject === 'funding-tracker-94d6f' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
-            }}>
-              <Wifi size={10} />
-              {activeProject}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ 
+                background: 'rgba(59, 130, 246, 0.1)',
+                color: '#3b82f6',
+                padding: '2px 8px', borderRadius: '4px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px',
+                border: '1px solid rgba(59, 130, 246, 0.2)'
+              }}>
+                <Wifi size={10} />
+                {activeProject}
+              </div>
+              <div style={{ 
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: '#10b981',
+                padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold'
+              }}>
+                v2.0.5-ULTRA-SYNC
+              </div>
             </div>
           </div>
         </div>
         <button className={styles.btnPrimary} onClick={() => setIsModalOpen(true)}>
           <UserPlus size={18} style={{ marginRight: '8px' }} />
-          Pre-Authorize User
+          Invite User
         </button>
       </div>
 
@@ -204,7 +210,7 @@ export const AdminUserManagement = () => {
                   </td>
                   <td>
                     <span style={{ 
-                      color: user.status === 'Active' ? 'var(--accent)' : 'var(--danger)',
+                      color: user.status === 'Active' ? '#10b981' : 'var(--danger)',
                       fontSize: '0.85rem',
                       fontWeight: 600
                     }}>
@@ -259,7 +265,7 @@ export const AdminUserManagement = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label>Permission Level</label>
+                <label>System Role</label>
                 <select 
                   className={styles.formControl}
                   value={formData.role}
@@ -285,9 +291,6 @@ export const AdminUserManagement = () => {
                   style={{ borderColor: 'rgba(251, 191, 36, 0.3)' }}
                   placeholder="Required for Firewall Bypass"
                 />
-                <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Required when working from restricted networks.
-                </p>
               </div>
               
               <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>

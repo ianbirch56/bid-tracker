@@ -11,14 +11,21 @@
 }
 
 .brand {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 0;
   margin-bottom: 48px;
-  letter-spacing: -0.5px;
+}
+
+.brandName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7d8ea3;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
 }
 
 .companyLogo {

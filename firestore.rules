@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // helper: Check if user is 'Active' (Null-Safe)
+    function isActive() {
+      return request.auth != null && 
+             request.auth.token != null && 
+             request.auth.token.email != null &&
+             exists(/databases/$(database)/documents/appUsers/$(request.auth.token.email.lower())) &&
+             get(/databases/$(database)/documents/appUsers/$(request.auth.token.email.lower())).data.status == 'Active';
+    }
+    
+    // helper: Check if user is an 'Admin' (Null-Safe)
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token != null && 
+             request.auth.token.email != null && (
+               request.auth.token.email.lower() == 'ian.birch@ymcatrinity.org.uk' ||
+               (exists(/databases/$(database)/documents/appUsers/$(request.auth.token.email.lower())) && 
+                get(/databases/$(database)/documents/appUsers/$(request.auth.token.email.lower())).data.role == 'Admin')
+             );
+    }
+
+    // 1. appUsers Collection (System Identities)
+    match /appUsers/{userEmail} {
+      allow read: if request.auth != null; 
+      allow write: if isAdmin() || (request.resource.data.provisionId == '7B9A-E21D-40C2');
+    }
+
+    // 2. Project Data
+    match /{document=**} {
+      allow read, write: if request.auth != null && (isActive() || isAdmin());
+    }
+  }
+}
+

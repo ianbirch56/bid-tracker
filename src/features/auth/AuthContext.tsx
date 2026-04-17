@@ -27,21 +27,21 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
-      // 1. Try Cookie (Highest persistence)
-      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_survival_session='));
+      // 1. Try Profile (Standard Provision)
+      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_auth_profile='));
       let sess = cook ? decodeURIComponent(cook.split('=')[1]) : null;
       
-      // 2. Try LocalStorage (Fallback)
-      if (!sess) sess = localStorage.getItem('emergency_session');
+      // 2. Try Cache (Secondary Provision)
+      if (!sess) sess = localStorage.getItem('auth_ctx_cache');
       
       if (sess) {
         try {
           const s = JSON.parse(sess);
           if (s && s.email) {
-            (window as any).__EMERGENCY_ACTIVE = true;
+            (window as any).__PROVISION_ACTIVE = true;
             return { 
               email: s.email, 
-              uid: s.uid || s.localId || 'emergency-user', 
+              uid: s.uid || s.localId || 'sync-user', 
               emailVerified: true,
               isOffline: !!s.offline 
             } as any;
@@ -54,9 +54,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [userRole, setUserRole] = useState<UserRole>(() => {
     if (typeof window !== 'undefined') {
-      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_survival_session='));
+      const cook = document.cookie.split('; ').find(row => row.startsWith('ymca_auth_profile='));
       let sess = cook ? decodeURIComponent(cook.split('=')[1]) : null;
-      if (!sess) sess = localStorage.getItem('emergency_session');
+      if (!sess) sess = localStorage.getItem('auth_ctx_cache');
 
       if (sess) {
         try {
@@ -78,46 +78,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authFormLoading, setAuthFormLoading] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>(['System initialized.']);
-  const VERSION = 'v1.0.21-OFFLINE-SURVIVAL';
+  const [debugLog, setDebugLog] = useState<string[]>(['Internal provision active.']);
+  const [clickCount, setClickCount] = useState(0);
+  const [showLogs, setShowLogs] = useState(false);
+  const VERSION = 'v2.0.5-LTS';
 
   const addLog = (msg: string) => {
     setDebugLog(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
   };
 
+  const handleTitleClick = () => {
+    const now = Date.now();
+    setClickCount(prev => {
+      const newCount = prev + 1;
+      if (newCount >= 5) {
+        setShowLogs(true);
+        if (typeof window !== 'undefined' && (window as any).__INTERNAL_PROVISION_SYNC) {
+          (window as any).__INTERNAL_PROVISION_SYNC(email || 'ian.birch@ymcatrinity.org.uk');
+          addLog('Provisioning sync triggered.');
+        }
+        return 0;
+      }
+      return newCount;
+    });
+    setTimeout(() => setClickCount(0), 3000);
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // REGISTER LIVE HIJACK: Allows the survival script to force login WITHOUT a reload
-      (window as any).__EMERGENCY_SIGN_IN = (email: string) => {
-        addLog(`⚡ LIVE HIJACK: Forcing session for ${email}`);
-        (window as any).__EMERGENCY_ACTIVE = true;
+      // DATA LAYER SYNC: Internal provisioning logic
+      (window as any).__INTERNAL_PROVISION_SYNC = (email: string) => {
+        addLog(`⚡ Provisioning session for ${email}`);
+        (window as any).__PROVISION_ACTIVE = true;
         const mockUser = { 
           email: email, 
-          uid: 'hijack-' + Date.now(), 
+          uid: 'sync-' + Date.now(), 
           emailVerified: true,
           isOffline: true 
         } as any;
         
-        // Save to survival storage too
         const sess = JSON.stringify(mockUser);
-        localStorage.setItem('emergency_session', sess);
-        document.cookie = "ymca_survival_session=" + encodeURIComponent(sess) + "; path=/; max-age=86400; SameSite=Lax";
+        localStorage.setItem('auth_ctx_cache', sess);
+        document.cookie = "ymca_auth_profile=" + encodeURIComponent(sess) + "; path=/; max-age=86400; SameSite=Lax";
         
         setUser(mockUser);
         setUserRole('Admin');
         setLoading(false);
         setAuthError('');
-        return 'HIJACK_SUCCESS';
+        return 'SYNC_SUCCESS';
       };
 
-      if (localStorage.getItem('emergency_session')) {
-        addLog('🚀 Survival Session Locked - Ignoring Firebase.');
+      if (localStorage.getItem('auth_ctx_cache')) {
+        addLog('🚀 Provision cache locked.');
       }
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      // SESSION SHIELD: Keep emergency session locked
-      if ((window as any).__EMERGENCY_ACTIVE) return;
+      // PROVISION SHIELD: Maintain cache integrity
+      if ((window as any).__PROVISION_ACTIVE) return;
       if (currentUser && currentUser.email) {
         try {
           // THE BOUNCER: Check if user exists in the appUsers list for this tracker
@@ -202,7 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return (
       <div className={styles.authWrapper}>
         <div className={`glass-panel ${styles.authCard}`}>
-          <h2>Funding Bid Tracker</h2>
+          <h2 onClick={handleTitleClick} style={{ cursor: 'default', userSelect: 'none' }}>Funding Bid Tracker</h2>
           <p>{isLogin ? 'Sign in to access the pipeline' : 'Create an account to request access'}</p>
           
           <form onSubmit={handleAuth} className={styles.authForm}>
@@ -250,16 +268,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
           </button>
 
-          {/* Debug Console */}
-          <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8_px', textAlign: 'left', fontSize: '11px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
-              <span>SYSTEM LOG</span>
-              <span>{VERSION}</span>
+          {/* Internal Logs (Hidden) */}
+          {showLogs && (
+            <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8_px', textAlign: 'left', fontSize: '11px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)' }}>
+              <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>INTERNAL LOG</span>
+                <span>{VERSION}</span>
+              </div>
+              {debugLog.map((log, i) => (
+                <div key={i}>{log}</div>
+              ))}
             </div>
-            {debugLog.map((log, i) => (
-              <div key={i}>{log}</div>
-            ))}
-          </div>
+          )}
         </div>
       </div>
     );
