@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/features/auth/AuthContext';
 import styles from './Sidebar.module.css';
 import { LayoutDashboard, FileText, Users, LogOut, ChevronRight, Shield } from 'lucide-react';
-import Logo from '@/shared/assets/logo.png';
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -36,7 +35,7 @@ export const Sidebar = () => {
   return (
     <aside className={`glass-panel ${styles.sidebar}`}>
       <div className={styles.brand}>
-        <img src={Logo.src} alt="YMCA Logo" className={styles.companyLogo} />
+        <img src="/logo.png" alt="YMCA Logo" className={styles.companyLogo} />
         <div className={styles.brandName}>
           Funding Tracker
         </div>
