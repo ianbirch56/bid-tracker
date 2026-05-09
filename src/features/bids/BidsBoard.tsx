@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bid, BidStatus, StatusOptions } from './types';
 import { BidForm } from './BidForm';
-import { db } from '@/shared/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+
 import { useToast } from '@/shared/components/Toast/ToastProvider';
 import { Plus, Search, Filter, MoreVertical, Trash2, ExternalLink } from 'lucide-react';
 import styles from './BidsBoard.module.css';
@@ -16,24 +15,34 @@ export const BidsBoard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<BidStatus | 'All'>('All');
 
-  // Fetch Bids from Firestore
+  // Fetch Bids from API
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'bids'), (snapshot) => {
-      const data = snapshot.docs.map(document => ({ 
-        id: document.id, 
-        ...document.data() 
-      })) as Bid[];
-      // Sort newest first
-      setBids(data.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()));
-    });
-    return () => unsubscribe();
+    const fetchBids = async () => {
+      try {
+        const res = await fetch('/api/bids');
+        if (res.ok) {
+          const data = await res.json() as Bid[];
+          setBids(data.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()));
+        }
+      } catch (e) {
+        console.error('Failed to fetch bids', e);
+      }
+    };
+    fetchBids();
   }, []);
 
   const handleSaveBid = async (newBid: Bid) => {
     try {
       const { id, ...bidData } = newBid;
       const cleanData = JSON.parse(JSON.stringify(bidData)); // Scrub undefined
-      await addDoc(collection(db, 'bids'), cleanData);
+      const res = await fetch('/api/bids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cleanData)
+      });
+      if (!res.ok) throw new Error('Failed to save bid');
+      const savedBid = await res.json();
+      setBids(prev => [savedBid, ...prev].sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()));
       setIsModalOpen(false);
       addToast('Bid Successfully Logged', 'success', `The bid for ${newBid.fundName} is now in the pipeline.`);
     } catch (error: any) {
@@ -46,7 +55,9 @@ export const BidsBoard = () => {
     if (!id) return;
     if (confirm("Are you sure you want to permanently delete this funding bid?")) {
       try {
-        await deleteDoc(doc(db, 'bids', id));
+        const res = await fetch(`/api/bids/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete bid');
+        setBids(prev => prev.filter(b => b.id !== id));
         addToast('Bid Erased', 'success');
       } catch (error: any) {
         addToast('Delete Failed', 'error', error.message);

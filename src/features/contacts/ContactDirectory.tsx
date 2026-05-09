@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { db } from '@/shared/lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+
 import { useToast } from '@/shared/components/Toast/ToastProvider';
 import { Search, UserPlus, Mail, Phone, Building2, Trash2 } from 'lucide-react';
 import styles from './ContactDirectory.module.css';
@@ -24,17 +23,31 @@ export const ContactDirectory = () => {
   const [newContact, setNewContact] = useState<Partial<Contact>>({});
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'contacts'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Contact[];
-      setContacts(data.sort((a, b) => a.name.localeCompare(b.name)));
-    });
-    return () => unsubscribe();
+    const fetchContacts = async () => {
+      try {
+        const res = await fetch('/api/contacts');
+        if (res.ok) {
+          const data = await res.json() as Contact[];
+          setContacts(data.sort((a, b) => a.name.localeCompare(b.name)));
+        }
+      } catch (e) {
+        console.error('Failed to fetch contacts', e);
+      }
+    };
+    fetchContacts();
   }, []);
 
   const handleSaveContact = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'contacts'), newContact);
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newContact)
+      });
+      if (!res.ok) throw new Error('Failed to save contact');
+      const savedContact = await res.json();
+      setContacts(prev => [...prev, savedContact].sort((a, b) => a.name.localeCompare(b.name)));
       setIsModalOpen(false);
       setNewContact({});
       addToast('Contact Added', 'success');
@@ -46,8 +59,14 @@ export const ContactDirectory = () => {
   const handleDelete = async (id: string | undefined) => {
     if (!id) return;
     if (confirm("Delete this contact?")) {
-      await deleteDoc(doc(db, 'contacts', id));
-      addToast('Deleted', 'success');
+      try {
+        const res = await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete contact');
+        setContacts(prev => prev.filter(c => c.id !== id));
+        addToast('Deleted', 'success');
+      } catch (error: any) {
+        addToast('Error', 'error', error.message);
+      }
     }
   };
 

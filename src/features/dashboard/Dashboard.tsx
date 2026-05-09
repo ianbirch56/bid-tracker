@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '@/shared/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+
 import { Bid } from '@/features/bids/types';
 import { useAuth } from '@/features/auth/AuthContext';
 import styles from './Dashboard.module.css';
@@ -13,11 +12,18 @@ export const Dashboard = () => {
   const [bids, setBids] = useState<Bid[]>([]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'bids'), (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as Bid);
-      setBids(data);
-    });
-    return () => unsubscribe();
+    const fetchBids = async () => {
+      try {
+        const res = await fetch('/api/bids');
+        if (res.ok) {
+          const data = await res.json() as Bid[];
+          setBids(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch bids for dashboard', e);
+      }
+    };
+    fetchBids();
   }, []);
 
   const metrics = useMemo(() => {

@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { db } from '@/shared/lib/firebase';
-import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
+
 import { useAuth } from '@/features/auth/AuthContext';
 import { useToast } from '@/shared/components/Toast/ToastProvider';
 import { UserPlus, Shield, Trash2, Mail, User, Wifi } from 'lucide-react';
 import styles from './AdminUserManagement.module.css';
-import { getApp } from 'firebase/app';
+
 
 export interface AppUser {
   id?: string;
@@ -34,31 +33,25 @@ export const AdminUserManagement = () => {
   });
 
   useEffect(() => {
-    // DIAGNOSTIC CORE
-    try {
-      const app = getApp('funding-tracker');
-      const pId = (app.options as any).projectId;
-      setActiveProject(pId);
-    } catch (e) {
-      console.error('❌ Connection Detect Failed:', e);
-    }
+    setActiveProject('Vercel SSR Mode');
 
-    const unsubscribe = onSnapshot(
-      collection(db, 'appUsers'), 
-      (snapshot) => {
-        const data = snapshot.docs.map(document => ({ 
-          id: document.id, 
-          ...document.data() 
-        })) as AppUser[];
-        setUsers(data);
-        setConnError(null);
-      },
-      (error) => {
-        console.error('Snapshot Error:', error);
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/users');
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data);
+          setConnError(null);
+        } else {
+          const errData = await res.json();
+          setConnError(errData.error || 'Failed to fetch users');
+        }
+      } catch (error: any) {
         setConnError(error.message);
       }
-    );
-    return () => unsubscribe();
+    };
+    
+    fetchUsers();
   }, []);
 
   if (userRole !== 'Admin') {
@@ -80,10 +73,15 @@ export const AdminUserManagement = () => {
 
     if (confirm(`Are you sure you want to revoke access for ${user.email}?`)) {
       try {
-        await setDoc(doc(db, 'appUsers', user.id), {
-          ...user,
-          status: 'Revoked'
+        const res = await fetch(`/api/users/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...user, status: 'Revoked' })
         });
+        
+        if (!res.ok) throw new Error('Failed to revoke access');
+        
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: 'Revoked' } : u));
         addToast("Access Revoked", "success", "User has been removed from the active list.");
       } catch (error: any) {
         console.error("Revoke Error:", error);
@@ -106,7 +104,16 @@ export const AdminUserManagement = () => {
         status: 'Active'
       };
 
-      await setDoc(doc(db, 'appUsers', docId), newUser);
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      });
+      
+      if (!res.ok) throw new Error('Failed to save user');
+      
+      const savedUser = await res.json();
+      setUsers(prev => [...prev, savedUser]);
 
       setIsModalOpen(false);
       addToast("User Pre-Authorized", "success", `${newUser.name} is now approved.`);

@@ -1,15 +1,18 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/shared/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import styles from './AuthContext.module.css';
 
 export type UserRole = 'Admin' | 'Editor' | 'Viewer';
 
+interface SessionUser {
+  uid: string;
+  email: string;
+  displayName: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: SessionUser | null;
   userRole: UserRole;
   loading: boolean;
   logout: () => Promise<void>;
@@ -25,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('Viewer');
   const [loading, setLoading] = useState(true);
   
@@ -37,51 +40,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authFormLoading, setAuthFormLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser && currentUser.email) {
-        try {
-          const q = query(
-            collection(db, 'appUsers'), 
-            where('email', '==', currentUser.email.toLowerCase().trim()),
-            where('status', '==', 'Active')
-          );
-          const snapshot = await getDocs(q);
-
-          if (!snapshot.empty) {
-            const dbUser = snapshot.docs[0].data();
-            setUserRole(dbUser.role);
-            setUser(currentUser);
-          } else {
-            await signOut(auth);
-            setUser(null);
-            setAuthError('Access Denied: Your account has not yet been granted access to the Funding Tracker.');
-          }
-        } catch (err) {
-          console.error('Auth Check Error:', err);
-          setAuthError('Security check failed. Please check your connection.');
-        } finally {
-          setLoading(false);
+    // Fetch session on mount
+    const fetchSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session');
+        const data = await res.json();
+        
+        if (res.ok && data.user) {
+          setUser(data.user);
+          setUserRole(data.role);
+        } else {
+          setUser(null);
         }
-      } else {
+      } catch (err) {
+        console.error('Session check failed:', err);
         setUser(null);
+      } finally {
         setLoading(false);
       }
-    });
-
-    return () => {
-      unsubscribe();
     };
+
+    fetchSession();
   }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setAuthFormLoading(true);
+    
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+        
+        setUser({ uid: 'server-session', email: data.user.email, displayName: '' });
+        setUserRole(data.user.role);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        throw new Error("Registration is handled by admins only in this setup.");
       }
     } catch (error: any) {
       console.error("Auth Error:", error);
@@ -92,8 +96,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+    } catch (e) {
+      console.error('Logout failed', e);
+    }
   };
+
+  if (loading) {
+    return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Loading System...</div>;
+  }
 
   if (!user) {
     return (
