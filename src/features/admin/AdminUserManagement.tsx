@@ -15,7 +15,6 @@ export interface AppUser {
   role: 'Admin' | 'Editor' | 'Viewer';
   status: 'Active' | 'Revoked';
   name: string;
-  adminKey?: string; 
 }
 
 export const AdminUserManagement = () => {
@@ -31,8 +30,7 @@ export const AdminUserManagement = () => {
     name: '',
     email: '',
     role: 'Editor',
-    status: 'Active',
-    adminKey: ''
+    status: 'Active'
   });
 
   useEffect(() => {
@@ -81,14 +79,10 @@ export const AdminUserManagement = () => {
     }
 
     if (confirm(`Are you sure you want to revoke access for ${user.email}?`)) {
-      const key = prompt("Please enter the Bypass Security Key to authorize this revocation:");
-      if (!key) return;
-
       try {
         await setDoc(doc(db, 'appUsers', user.id), {
           ...user,
-          status: 'Revoked',
-          adminKey: key
+          status: 'Revoked'
         });
         addToast("Access Revoked", "success", "User has been removed from the active list.");
       } catch (error: any) {
@@ -109,8 +103,7 @@ export const AdminUserManagement = () => {
         name: formData.name,
         email: docId,
         role: formData.role as any,
-        status: 'Active',
-        adminKey: formData.adminKey
+        status: 'Active'
       };
 
       await setDoc(doc(db, 'appUsers', docId), newUser);
@@ -118,7 +111,7 @@ export const AdminUserManagement = () => {
       setIsModalOpen(false);
       addToast("User Pre-Authorized", "success", `${newUser.name} is now approved.`);
       
-      setFormData({ name: '', email: '', role: 'Editor', status: 'Active', adminKey: '' });
+      setFormData({ name: '', email: '', role: 'Editor', status: 'Active' });
     } catch (error: any) {
       console.error("Save Error:", error);
       addToast("Save Failed", "error", `Details: ${error.message || error.code || 'Unknown Error'}`);
@@ -132,7 +125,7 @@ export const AdminUserManagement = () => {
           <h1>Registration Admin</h1>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-              Control access using the hardened Bypass Key.
+              Manage access for all system users.
             </p>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ 
@@ -275,22 +268,6 @@ export const AdminUserManagement = () => {
                   <option value="Editor">Editor (Full Pipeline Access)</option>
                   <option value="Admin">Admin (Full Control)</option>
                 </select>
-              </div>
-              
-              <div className={styles.formGroup} style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <label style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Shield size={14} />
-                  Bypass Security Key
-                </label>
-                <input 
-                  required
-                  type="password" 
-                  value={formData.adminKey} 
-                  onChange={e => setFormData({...formData, adminKey: e.target.value})} 
-                  className={styles.formControl}
-                  style={{ borderColor: 'rgba(251, 191, 36, 0.3)' }}
-                  placeholder="Required for Firewall Bypass"
-                />
               </div>
               
               <div style={{ display: 'flex', gap: '1rem', marginTop: '2.5rem' }}>

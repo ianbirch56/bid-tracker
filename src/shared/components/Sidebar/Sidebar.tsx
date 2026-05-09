@@ -35,7 +35,7 @@ export const Sidebar = () => {
   return (
     <aside className={`glass-panel ${styles.sidebar}`}>
       <div className={styles.brand}>
-        <img src="/logo.png" alt="YMCA Logo" className={styles.companyLogo} />
+        <img src="https://www.marcommscrm.co.uk/logo.png" alt="YMCA Logo" className={styles.companyLogo} />
         <div className={styles.brandName}>
           Funding Tracker
         </div>

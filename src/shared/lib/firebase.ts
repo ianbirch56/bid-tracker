@@ -18,9 +18,7 @@ import { initializeFirestore } from 'firebase/firestore';
 const app = getApps().find(a => a.name === 'funding-tracker') || initializeApp(firebaseConfig, 'funding-tracker');
 const auth = getAuth(app);
 
-// Use Long Polling to bypass corporate firewalls/proxies
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+// Use standard Firestore connection
+const db = getFirestore(app);
 
 export { auth, db };
